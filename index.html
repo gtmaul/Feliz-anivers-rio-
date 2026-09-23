@@ -15,8 +15,13 @@
         input, textarea { width: 100%; padding: 10px; border: 1px solid #d8b4fe; border-radius: 10px; font-size: 14px; outline: none; }
         textarea { height: 70px; resize: none; }
 
+        /* Area do Link Gerado */
+        .share-area { display: none; margin-top: 15px; background: #f3e8ff; padding: 15px; border-radius: 16px; border: 2px dashed #7b2cbf; }
+        .share-btn { background: #25d366; color: white; border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 25px; cursor: pointer; width: 100%; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+        .copy-btn { background: #7b2cbf; color: white; border: none; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 15px; cursor: pointer; width: 100%; margin-top: 6px; }
+
         /* Tela do Presente */
-        #gift-screen { cursor: pointer; padding: 20px 0; }
+        #gift-screen { cursor: pointer; padding: 20px 0; display: none; }
         .gift-box { font-size: 80px; animation: pulse 1.5s infinite alternate; margin: 15px 0; display: inline-block; }
         @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
         .tap-hint { font-size: 14px; color: #7b2cbf; font-weight: bold; animation: bounce 1s infinite alternate; }
@@ -51,7 +56,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .surprise-box { display: none; margin-top: 12px; background: #ffea00; color: #3c096c; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 13px; text-align: center; }
 
-        /* Confete e Balões Comemorativos */
+        /* Confete e Balões */
         .confetti { position: fixed; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; animation: confettiFall 3s linear forwards; z-index: 100; }
         @keyframes confettiFall { 0% { transform: translateY(-10px); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
         .party-balloon { position: fixed; bottom: -80px; width: 35px; height: 45px; border-radius: 50%; pointer-events: none; animation: partyFloat 5s linear forwards; z-index: 98; }
@@ -67,7 +72,7 @@
         <h2 style="color: #5a189a; margin-bottom: 15px;">Monte o Cartão 🎁</h2>
         <div class="form-group">
             <label>Nome do Aniversariante:</label>
-            <input type="text" id="input-name" placeholder="Ex: Luana Silva">
+            <input type="text" id="input-name" placeholder="Ex: Luana">
         </div>
         <div class="form-group">
             <label>Idade (Anos):</label>
@@ -79,14 +84,20 @@
         </div>
         <div class="form-group">
             <label>Texto da Surpresa (Destaque Amarelo):</label>
-            <textarea id="input-surprise" placeholder="Escreva a surpresa ou curiosidade..."></textarea>
+            <textarea id="input-surprise" placeholder="Escreva a surpresa..."></textarea>
         </div>
-        <button class="btn" onclick="generateCard()">✨ Gerar Cartão Prontinho</button>
+        <button class="btn" onclick="generateShareableLink()">✨ Gerar Link para Enviar</button>
+
+        <div class="share-area" id="share-area">
+            <p style="color: #5a189a; font-weight: bold; font-size: 14px;">Seu cartão foi gerado com sucesso!</p>
+            <a href="#" id="whatsapp-btn" class="share-btn" target="_blank">📲 Enviar no WhatsApp</a>
+            <button class="copy-btn" onclick="copyGeneratedLink()">📋 Copiar Link do Cartão</button>
+        </div>
     </div>
 
-    <!-- TELA 1: O PRESENTE -->
-    <div id="gift-screen" style="display: none;" onclick="openGift()">
-        <h1 id="display-title" style="color: #5a189a; font-size: 22px;">Você recebeu um presente! 🎁</h1>
+    <!-- TELA 1: O PRESENTE (Quem recebe vê esta tela primeiro) -->
+    <div id="gift-screen" onclick="openGift()">
+        <h1 style="color: #5a189a; font-size: 22px;">Você recebeu um presente! 🎁</h1>
         <p style="color: #7b2cbf; margin-top: 5px;">Para: <strong id="display-name"></strong></p>
         <div class="gift-box">🎁</div>
         <p class="tap-hint">👇 Toque no presente para abrir!</p>
@@ -132,18 +143,49 @@
 <script>
     let cardData = {};
     let isExtinguished = false;
+    let finalShareUrl = '';
 
-    function generateCard() {
+    // Verifica se o link já veio com dados (Link da Aniversariante)
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('n')) {
+            cardData = {
+                name: urlParams.get('n'),
+                age: urlParams.get('a'),
+                msg: urlParams.get('m'),
+                surprise: urlParams.get('s')
+            };
+            document.getElementById('creator-screen').style.display = 'none';
+            document.getElementById('display-name').innerText = cardData.name;
+            document.getElementById('gift-screen').style.display = 'block';
+        }
+    };
+
+    function generateShareableLink() {
         const name = document.getElementById('input-name').value || 'Aniversariante';
         const age = document.getElementById('input-age').value || '18';
         const msg = document.getElementById('input-msg').value || 'Feliz Aniversário! Que seu dia seja incrível!';
         const surprise = document.getElementById('input-surprise').value || 'Aproveite bastante o seu dia!';
 
-        cardData = { name, age, msg, surprise };
+        const baseUrl = window.location.href.split('?')[0];
+        const params = new URLSearchParams({
+            n: name,
+            a: age,
+            m: msg,
+            s: surprise
+        });
 
-        document.getElementById('creator-screen').style.display = 'none';
-        document.getElementById('display-name').innerText = name;
-        document.getElementById('gift-screen').style.display = 'block';
+        finalShareUrl = `${baseUrl}?${params.toString()}`;
+
+        document.getElementById('share-area').style.display = 'block';
+        
+        const wpText = encodeURIComponent(`Oii, ${name}! Te mandei um presente especial, abre esse link para ver: ${finalShareUrl}`);
+        document.getElementById('whatsapp-btn').href = `https://api.whatsapp.com/send?text=${wpText}`;
+    }
+
+    function copyGeneratedLink() {
+        navigator.clipboard.writeText(finalShareUrl);
+        alert('Link copiado! Agora é só colar e enviar para ela!');
     }
 
     function openGift() {
@@ -268,5 +310,4 @@
 </script>
 
 </body>
-  </html>
-  
+            </html>
